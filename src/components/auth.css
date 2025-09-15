@@ -1,0 +1,175 @@
+/* Background wrapper */
+.auth-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #1f1c2c, #928dab);
+  font-family: "Poppins", sans-serif;
+  padding: 20px;
+}
+
+/* Branding */
+.branding {
+  text-align: center;
+  margin-bottom: 20px;
+  color: white;
+  animation: fadeIn 1.5s ease-in-out;
+}
+
+.logoIcon {
+  font-size: 40px;
+  color: #a777e3;
+}
+
+.brandName {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 10px 0 5px;
+}
+
+.tagline {
+  font-size: 14px;
+  font-style: italic;
+  color: #ddd;
+}
+
+/* Auth card */
+.auth-card {
+  background: rgba(42, 42, 64, 0.9);
+  backdrop-filter: blur(12px);
+  padding: 40px 30px;
+  border-radius: 15px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  color: white;
+  animation: slideUp 1s ease;
+}
+
+.title {
+  margin-bottom: 10px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.icon {
+  margin-right: 10px;
+  color: #bbb;
+  font-size: 16px;
+}
+
+.input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+}
+
+/* Button */
+.button {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  box-shadow: 0 0 20px rgba(167, 119, 227, 0.8);
+}
+
+/* Toggle */
+.toggle {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.link {
+  color: #4e9fff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* 🔹 Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🔹 Mobile Responsiveness */
+@media (max-width: 480px) {
+  .auth-card {
+    width: 100%;
+    padding: 25px 20px;
+    border-radius: 10px;
+  }
+
+  .brandName {
+    font-size: 22px;
+  }
+
+  .tagline {
+    font-size: 12px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .inputGroup {
+    padding: 8px;
+  }
+
+  .button {
+    padding: 10px;
+    font-size: 14px;
+  }
+}
