@@ -204,3 +204,10 @@
   width: 20px;
   height: 20px;
 }
+
+/* Small error text */
+.auth-error {
+  margin: 8px 0 0;
+  color: #ff6b6b;
+  font-size: 13px;
+}
