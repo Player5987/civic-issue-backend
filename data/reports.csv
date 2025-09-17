@@ -1,0 +1,6 @@
+text,image_path,lat,lon,category_label,priority_label
+Pothole near the main street,data/images/pothole_01.jpg,28.6139,77.209,0,2
+Overflowing trash bin in the park,data/images/garbage_01.jpg,28.614,77.208,1,1
+Streetlight not working near bus stop,data/images/streetlight_01.jpg,28.615,77.207,2,3
+Fallen tree branch blocking footpath,data/images/obstacle_01.jpg,28.616,77.206,3,2
+Graffiti on the wall of community center,data/images/graffiti_01.jpg,28.617,77.205,4,0
