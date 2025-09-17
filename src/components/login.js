@@ -8,36 +8,73 @@ import {
 } from "react-icons/fa";
 import "./auth.css";
 import { useNavigate } from "react-router-dom";
-
-// Firebase
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-
-// ⚡ Replace with your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyAQe5l8LM8S9cL1TaA5MiwtTImdwXaJyfY",
-  authDomain: "swaraj-setu.firebaseapp.com",
-  projectId: "swaraj-setu",
-  storageBucket: "swaraj-setu.firebasestorage.app",
-  messagingSenderId: "800030530606",
-  appId: "1:800030530606:web:0b4d42d20f096cc68353bf"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+import supabase from "../lib/supabaseClient";
 
 function Auth() {
   const [isRegister, setIsRegister] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("citizen");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  // Google Login
   const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, provider);
-      navigate("/home"); // redirect to home after login
-    } catch (error) {
-      console.error("Google login failed:", error.message);
+      setError("");
+      // Firebase popup sign-in
+      const { firebaseAuth, googleProvider } = await import("../lib/firebaseClient");
+      const { signInWithPopup } = await import("firebase/auth");
+      const result = await signInWithPopup(firebaseAuth, googleProvider);
+      // result.user contains firebase user; you may want to create/sync this user with Supabase server if needed
+      navigate("/home");
+    } catch (e) {
+      setError(e.message || "Google login failed");
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (isRegister) {
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          return;
+        }
+        // Create user via server-side admin endpoint so the account is auto-confirmed
+        const resp = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fullName, email, password, role }),
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result?.message || "Signup failed");
+        // Sign in the newly created user to establish a session
+        const { data: signinData, error: signinError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signinError) throw signinError;
+        if (!signinData?.user) throw new Error("Login after signup failed");
+        navigate("/home");
+      } else {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        if (!data?.user) throw new Error("Login failed");
+        navigate("/home");
+      }
+    } catch (e) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,31 +87,46 @@ function Auth() {
       </div>
 
       <div className="auth-card">
-        <h2 className="title">
-          {isRegister ? "Create Account" : "Welcome Back"}
-        </h2>
-        <p className="subtitle">
-          {isRegister
-            ? "Register to report or manage civic issues"
-            : "Login to continue"}
-        </p>
+        <h2 className="title">{isRegister ? "Create Account" : "Welcome Back"}</h2>
+        <p className="subtitle">{isRegister ? "Register to report or manage civic issues" : "Login to continue"}</p>
 
-        <form className="form">
+        <form className="form" onSubmit={handleSubmit}>
           {isRegister && (
             <div className="inputGroup">
               <FaUser className="icon" />
-              <input type="text" placeholder="Full Name" className="input" />
+              <input
+                type="text"
+                placeholder="Full Name"
+                className="input"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
             </div>
           )}
 
           <div className="inputGroup">
             <FaEnvelope className="icon" />
-            <input type="email" placeholder="Email" className="input" />
+            <input
+              type="email"
+              placeholder="Email"
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
           <div className="inputGroup">
             <FaLock className="icon" />
-            <input type="password" placeholder="Password" className="input" />
+            <input
+              type="password"
+              placeholder="Password"
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
 
           {isRegister && (
@@ -85,12 +137,19 @@ function Auth() {
                   type="password"
                   placeholder="Confirm Password"
                   className="input"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                 />
               </div>
 
               <div className="inputGroup">
                 <FaUserShield className="icon" />
-                <select className="input">
+                <select
+                  className="input"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                >
                   <option value="citizen">Citizen</option>
                   <option value="admin">Admin</option>
                 </select>
@@ -98,12 +157,12 @@ function Auth() {
             </>
           )}
 
-          <button type="submit" className="button">
-            {isRegister ? "Register" : "Login"}
+          <button type="submit" className="button" disabled={loading}>
+            {loading ? (isRegister ? "Registering..." : "Logging in...") : isRegister ? "Register" : "Login"}
           </button>
+          {error && <p className="auth-error" role="alert">{error}</p>}
         </form>
 
-        {/* Google Login Button */}
         <button className="google-btn" onClick={handleGoogleLogin}>
           <img
             src="https://developers.google.com/identity/images/g-logo.png"
