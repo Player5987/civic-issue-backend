@@ -7,12 +7,11 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
-<<<<<<< HEAD
     "ra": "^0.9.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-scripts": "5.0.1",
-=======
+
     "firebase": "^12.2.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -20,7 +19,6 @@
     "react-router-dom": "^7.9.1",
     "react-scripts": "^5.0.1",
     "torch": "^0.2.7",
->>>>>>> 0f596ba2188e171bad4e936cbf509d6ea72b6fce
     "web-vitals": "^2.1.4"
   },
   "scripts": {
