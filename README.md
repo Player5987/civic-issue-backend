@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 0f596ba2188e171bad4e936cbf509d6ea72b6fce
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
@@ -68,3 +72,23 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+<<<<<<< HEAD
+=======
+=======
+# 🏙️ Civic Issue Reporting ML
+
+This project is a **multi-modal ML system** for classifying civic issues (like potholes, garbage, broken streetlights) from:
+- Text descriptions
+- Images
+- Metadata (lat/lon)
+
+It includes:
+- A training pipeline (`train.py`)
+- A multi-modal model (`model.py`)
+- A FastAPI inference server (`predict_api.py`)
+- A feedback loop to collect user-submitted reports
+
+---
+
+>>>>>>> 2c34159 (intail machine learning)
+>>>>>>> 0f596ba2188e171bad4e936cbf509d6ea72b6fce
