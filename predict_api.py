@@ -7,17 +7,19 @@ from transformers import BertTokenizer
 from torchvision import transforms
 from PIL import Image
 import pandas as pd
+import gdown
 
 app = FastAPI()
-import gdown
-import os
 
-# Path to save model locally
+# -------------------------------
+# Paths and Google Drive link
+# -------------------------------
 MODEL_PATH = "models/multi_modal_model_clean.pth"
-# Google Drive file link (replace with your own)
-URL = "https://drive.google.com/id=1vwCo7E_1a2DdsL7jvR_al8WHzDnbWV77"
+URL = "https://drive.google.com/uc?id=1vwCo7E_1a2DdsL7jvR_al8WHzDnbWV77"  # ✅ Correct format
 
+# -------------------------------
 # Download model if not already present
+# -------------------------------
 if not os.path.exists(MODEL_PATH):
     os.makedirs("models", exist_ok=True)
     print("📥 Downloading model from Google Drive...")
@@ -28,23 +30,33 @@ if not os.path.exists(MODEL_PATH):
 # -------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Ensure models folder exists
-os.makedirs("models", exist_ok=True)
-
 # Instantiate model
 text_encoder = TextEncoder(out_dim=128)
 image_encoder = ImageEncoder(out_dim=128)
 meta_encoder = MetadataEncoder(input_dim=2, out_dim=32)  # lat/lon
-model = MultiModalClassifier(text_dim=128, image_dim=128, meta_dim=32,
-                             category_classes=7, priority_classes=4)
+model = MultiModalClassifier(
+    text_dim=128,
+    image_dim=128,
+    meta_dim=32,
+    category_classes=7,
+    priority_classes=4
+)
 
-# Load trained weights
+# Load trained weights (PyTorch 2.6 fix)
 try:
-    model.load_state_dict(torch.load("models/multi_modal_model_clean.pth", map_location=device))
+    state_dict = torch.load(
+        MODEL_PATH,
+        map_location=device,
+        weights_only=False  # ✅ important for PyTorch >= 2.6
+    )
+    model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
+    print("✅ Model loaded successfully!")
 except FileNotFoundError:
-    print("⚠️ Model not found, please train first!")
+    print("⚠️ Model not found. Please train first!")
+except Exception as e:
+    print("❌ Error loading model:", e)
 
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
@@ -89,8 +101,9 @@ async def predict_issue(
         priority_pred = torch.argmax(priority_logits, dim=1).item()
 
         # -------------------------------
-        # Optional: Save inputs + outputs
+        # Save inputs + outputs
         # -------------------------------
+        os.makedirs("data/user_reports", exist_ok=True)
         df = pd.DataFrame([{
             "description": description,
             "latitude": latitude,
@@ -98,8 +111,12 @@ async def predict_issue(
             "category_pred": category_pred,
             "priority_pred": priority_pred
         }])
-        os.makedirs("data/user_reports", exist_ok=True)
-        df.to_csv("data/user_reports/predictions.csv", mode="a", header=not os.path.exists("data/user_reports/predictions.csv"), index=False)
+        df.to_csv(
+            "data/user_reports/predictions.csv",
+            mode="a",
+            header=not os.path.exists("data/user_reports/predictions.csv"),
+            index=False
+        )
 
         return JSONResponse({
             "category_prediction": category_pred,
@@ -108,3 +125,4 @@ async def predict_issue(
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
