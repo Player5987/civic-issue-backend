@@ -9,6 +9,11 @@ from torchvision import transforms
 from transformers import BertTokenizer
 from model import CivicIssueModel
 
+import os
+os.makedirs("models", exist_ok=True)
+os.makedirs("data/user_images", exist_ok=True)
+
+
 # ------------------------
 # 1. Dataset Class
 # ------------------------
@@ -112,3 +117,6 @@ for epoch in range(3):  # try 3 epochs first
 # ------------------------
 torch.save(model.state_dict(), "models/multi_modal_model.pth")
 print("✅ Model saved to models/multi_modal_model.pth")
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)

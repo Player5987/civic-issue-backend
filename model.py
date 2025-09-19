@@ -3,40 +3,62 @@ import torch
 import torch.nn as nn
 from transformers import BertModel
 from torchvision import models
+from torchvision.models import ResNet50_Weights
 
 # ------------------------
 # 1. Text Encoder (BERT)
 # ------------------------
+from transformers import BertModel, BertTokenizer
+
 class TextEncoder(nn.Module):
-    def __init__(self, pretrained_model='bert-base-uncased', out_dim=128):
+    def __init__(self, pretrained_model='bert-base-uncased', out_dim=128, use_pretrained=True):
         super().__init__()
-        self.bert = BertModel.from_pretrained(pretrained_model)
+        try:
+            if use_pretrained:
+                self.bert = BertModel.from_pretrained(pretrained_model)
+            else:
+                self.bert = BertModel(BertModel.config_class())
+        except Exception as e:
+            print("⚠️ Could not load pretrained BERT, using random weights:", e)
+            self.bert = BertModel(BertModel.config_class())
+
         self.fc = nn.Linear(self.bert.config.hidden_size, out_dim)
         self.dropout = nn.Dropout(0.2)
-    
+
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        cls_embedding = outputs.last_hidden_state[:, 0, :]  # [CLS]
-        out = self.dropout(torch.relu(self.fc(cls_embedding)))
-        return out  # [batch, out_dim]
+        cls_embedding = outputs.last_hidden_state[:, 0, :]
+        return self.dropout(torch.relu(self.fc(cls_embedding)))
+
 
 # ------------------------
 # 2. Image Encoder (ResNet)
 # ------------------------
+from torchvision import models
+from torchvision.models import ResNet50_Weights
+import torch.nn as nn
+
 class ImageEncoder(nn.Module):
     def __init__(self, out_dim=128):
         super().__init__()
-        resnet = models.resnet50(pretrained=True)
+        try:
+            # ✅ Load pretrained weights if available
+            resnet = models.resnet50(weights=ResNet50_Weights.DEFAULT)
+        except Exception as e:
+            print("⚠️ Could not load pretrained weights, using untrained ResNet50:", e)
+            resnet = models.resnet50(weights=None)
+
         modules = list(resnet.children())[:-1]  # remove final fc
         self.resnet = nn.Sequential(*modules)
         self.fc = nn.Linear(resnet.fc.in_features, out_dim)
         self.dropout = nn.Dropout(0.2)
-    
+
     def forward(self, x):
         features = self.resnet(x)  # [B, 2048, 1, 1]
-        features = features.view(features.size(0), -1)
+        features = features.view(features.size(0), -1)  # flatten
         out = self.dropout(torch.relu(self.fc(features)))
-        return out  # [batch, out_dim]
+        return out
+
 
 # ------------------------
 # 3. Metadata Encoder

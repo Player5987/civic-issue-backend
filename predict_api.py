@@ -1,26 +1,41 @@
-# predict_api.py
-import torch
-from torch.nn import functional as F
-from fastapi import FastAPI, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import JSONResponse
+import torch
+import os
+from model import MultiModalClassifier, TextEncoder, ImageEncoder, MetadataEncoder
 from transformers import BertTokenizer
-from PIL import Image
 from torchvision import transforms
-import io
-
-from model import CivicIssueModel  # your fixed model.py
+from PIL import Image
+import pandas as pd
 
 app = FastAPI()
 
-# ------------------------
-# 1. Setup
-# ------------------------
+# -------------------------------
+# Load model and tokenizer
+# -------------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load tokenizer
+# Ensure models folder exists
+os.makedirs("models", exist_ok=True)
+
+# Instantiate model
+text_encoder = TextEncoder(out_dim=128)
+image_encoder = ImageEncoder(out_dim=128)
+meta_encoder = MetadataEncoder(input_dim=2, out_dim=32)  # lat/lon
+model = MultiModalClassifier(text_dim=128, image_dim=128, meta_dim=32,
+                             category_classes=7, priority_classes=4)
+
+# Load trained weights
+try:
+    model.load_state_dict(torch.load("models/multi_modal_model.pth", map_location=device))
+    model.to(device)
+    model.eval()
+except FileNotFoundError:
+    print("⚠️ Model not found, please train first!")
+
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
-# Image preprocessing
+# Image transforms
 image_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -28,52 +43,55 @@ image_transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# Load trained model
-model = CivicIssueModel(category_classes=5, priority_classes=4).to(device)
-model.load_state_dict(torch.load("models/multi_modal_model.pth", map_location=device))
-model.eval()
-
-
-# ------------------------
-# 2. API Route
-# ------------------------
+# -------------------------------
+# Endpoint: Prediction
+# -------------------------------
 @app.post("/predict")
-async def predict(
-    text: str = Form(...),
-    lat: float = Form(...),
-    lon: float = Form(...),
-    file: UploadFile = None
+async def predict_issue(
+    description: str = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    file: UploadFile = File(...)
 ):
     try:
-        # ---- Text ----
-        inputs = tokenizer(
-            text, return_tensors="pt", padding="max_length",
-            truncation=True, max_length=32
-        )
-        input_ids = inputs["input_ids"].to(device)
-        attention_mask = inputs["attention_mask"].to(device)
+        # 1. Process text
+        text_inputs = tokenizer(description, return_tensors="pt", padding=True, truncation=True)
+        text_emb = text_encoder(text_inputs["input_ids"], text_inputs["attention_mask"])
 
-        # ---- Image ----
-        if file:
-            contents = await file.read()
-            img = Image.open(io.BytesIO(contents)).convert("RGB")
-            img = image_transform(img).unsqueeze(0).to(device)
-        else:
-            return JSONResponse({"error": "Image file required"}, status_code=400)
+        # 2. Process image
+        img = Image.open(file.file).convert("RGB")
+        img = image_transform(img).unsqueeze(0)
+        image_emb = image_encoder(img)
 
-        # ---- Metadata ----
-        metadata = torch.tensor([[lat, lon]], dtype=torch.float).to(device)
+        # 3. Process metadata
+        meta = torch.tensor([[latitude, longitude]], dtype=torch.float32)
+        meta_emb = meta_encoder(meta)
 
-        # ---- Forward Pass ----
+        # 4. Run model
         with torch.no_grad():
-            category_logits, priority_logits = model(input_ids, attention_mask, img, metadata)
-            category_pred = torch.argmax(F.softmax(category_logits, dim=1), dim=1).item()
-            priority_pred = torch.argmax(F.softmax(priority_logits, dim=1), dim=1).item()
+            category_logits, priority_logits = model(text_emb, image_emb, meta_emb)
 
-        return {
-            "category_prediction": int(category_pred),
-            "priority_prediction": int(priority_pred)
-        }
+        # 5. Convert predictions to labels
+        category_pred = torch.argmax(category_logits, dim=1).item()
+        priority_pred = torch.argmax(priority_logits, dim=1).item()
+
+        # -------------------------------
+        # Optional: Save inputs + outputs
+        # -------------------------------
+        df = pd.DataFrame([{
+            "description": description,
+            "latitude": latitude,
+            "longitude": longitude,
+            "category_pred": category_pred,
+            "priority_pred": priority_pred
+        }])
+        os.makedirs("data/user_reports", exist_ok=True)
+        df.to_csv("data/user_reports/predictions.csv", mode="a", header=not os.path.exists("data/user_reports/predictions.csv"), index=False)
+
+        return JSONResponse({
+            "category_prediction": category_pred,
+            "priority_prediction": priority_pred
+        })
 
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)

@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 from PIL import Image, ImageDraw
+import os
+
 
 # Ensure folders exist
 os.makedirs("data/images", exist_ok=True)
