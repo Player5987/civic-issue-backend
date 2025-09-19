@@ -40,7 +40,7 @@ model = MultiModalClassifier(text_dim=128, image_dim=128, meta_dim=32,
 
 # Load trained weights
 try:
-    model.load_state_dict(torch.load("models/multi_modal_model.pth", map_location=device))
+    model.load_state_dict(torch.load("models/multi_modal_model_clean.pth", map_location=device))
     model.to(device)
     model.eval()
 except FileNotFoundError:
