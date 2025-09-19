@@ -13,10 +13,9 @@ import gdown
 import os
 
 # Path to save model locally
-MODEL_PATH = "models/multi_modal_model.pth"
+MODEL_PATH = "models/multi_modal_model_clean.pth"
 # Google Drive file link (replace with your own)
-URL = "https://drive.google.com/uc?export=download&id=1rGTOT-kBPWt8AfuScTJ2XG8aaRNY5apr"
-
+URL = "https://drive.google.com/uc?export=download&id=1vwCo7E_1a2DdsL7jvR_al8WHzDnbWV77"
 
 # Download model if not already present
 if not os.path.exists(MODEL_PATH):
