@@ -9,6 +9,20 @@ from PIL import Image
 import pandas as pd
 
 app = FastAPI()
+import gdown
+import os
+
+# Path to save model locally
+MODEL_PATH = "models/multi_modal_model.pth"
+# Google Drive file link (replace with your own)
+URL = "https://drive.google.com/uc?id=1fNxXqnGoj6Gecs1k6hinhhRr4DQZVwnk"
+# https://drive.google.com/drive/folders/1fNxXqnGoj6Gecs1k6hinhhRr4DQZVwnk?usp=sharing
+
+# Download model if not already present
+if not os.path.exists(MODEL_PATH):
+    os.makedirs("models", exist_ok=True)
+    print("📥 Downloading model from Google Drive...")
+    gdown.download(URL, MODEL_PATH, quiet=False)
 
 # -------------------------------
 # Load model and tokenizer
